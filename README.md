@@ -15,12 +15,7 @@ bfdbsafjfdsajfdb
 2. Decide what websites are free domain/have existing api to webscrape from’
 3. 
 4. Import into app, need to figure out how to have such a large amount of
-
-
-Buildspace Week 1 (Overdue):
-- One-liner:
-- Why do you want to work on this?
-- 
+ 
 
 Buildspace Week 2 (Due July 1st):
 
