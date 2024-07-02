@@ -7,13 +7,6 @@ Aesthetics. Ai
 - Reccomend similar /newer asthetics based on prev likes and avoid those based on prev dislikes (our ai)
 - Maybe at the end we can have like room layouts with their previous likes all compiled in a room that they can furnish on their own too (like dream room 
 
-bfdbsafjfdsajfdbFdsfd
-
-
-dffsfdds
-fsd
-fsd
-
 
 - i want to make a "dating app" style of application for users who love furniture. as in users may swipe right if they like a piece of furniture that i webscrape off a website, and a learning model will curate a feed for them that matches their style. additionally they will be able to directly buy the product. the user may also swipe left indicating they don't like it and we will also account that in the learning algorithm.
 
