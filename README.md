@@ -12,7 +12,7 @@ Aesthetics. Ai
 
 1. Basic app “tinder-like” ui - swift
 2. Decide what websites are free domain/have existing api to webscrape from’
-3. 
+3. PUSHING TEST ON PC
 4. Import into app, need to figure out how to have such a large amount of
  
 
