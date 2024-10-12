@@ -36,6 +36,9 @@ async function getFetch() {
 dotenv.config({ path: path.join(__dirname, '..', 'api.env') });
 // This method is called when your extension is activated
 function activate(context) {
+    // Data structures to store previous errors and recent edits
+    const previousErrors = new Set();
+    const recentEdits = new Map(); // Map line numbers to timestamps
     // Register the "Explain Code" command
     let explainCode = vscode.commands.registerCommand('alex-krutang-codepulse.explainCode', async () => {
         const editor = vscode.window.activeTextEditor;
@@ -60,12 +63,75 @@ function activate(context) {
         }
     });
     context.subscriptions.push(explainCode);
+    // Set up listener for document changes
+    vscode.workspace.onDidChangeTextDocument((event) => {
+        if (event.contentChanges.length === 0)
+            return; // No changes
+        const timestamp = Date.now();
+        for (const change of event.contentChanges) {
+            const startLine = change.range.start.line;
+            const endLine = change.range.end.line;
+            for (let line = startLine; line <= endLine; line++) {
+                recentEdits.set(line, timestamp);
+            }
+        }
+        // Clean up old entries in recentEdits (older than 5 seconds)
+        const fiveSecondsAgo = timestamp - 5000;
+        for (const [line, editTime] of recentEdits) {
+            if (editTime < fiveSecondsAgo) {
+                recentEdits.delete(line);
+            }
+        }
+    });
     // Set interval to analyze code every 30 seconds
     const interval = setInterval(async () => {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
-            const documentText = editor.document.getText();
-            await analyzeCode(documentText);
+            const document = editor.document;
+            const diagnostics = vscode.languages.getDiagnostics(document.uri);
+            // Process diagnostics
+            const validErrors = [];
+            const currentTime = Date.now();
+            const fiveSecondsAgo = currentTime - 5000;
+            for (const diagnostic of diagnostics) {
+                // Ignore non-error diagnostics (e.g., warnings)
+                if (diagnostic.severity !== vscode.DiagnosticSeverity.Error) {
+                    continue;
+                }
+                const lineNumber = diagnostic.range.start.line;
+                const errorKey = `${lineNumber}:${diagnostic.message}`;
+                // Ignore if error was previously shown
+                if (previousErrors.has(errorKey)) {
+                    continue;
+                }
+                // Ignore if error was caused by recent typing
+                const lastEditTime = recentEdits.get(lineNumber);
+                if (lastEditTime && lastEditTime >= fiveSecondsAgo) {
+                    continue;
+                }
+                validErrors.push({ errorKey, lineNumber, message: diagnostic.message });
+            }
+            if (validErrors.length > 0) {
+                // Show the first valid error
+                const firstError = validErrors.shift(); // Added '!' here
+                previousErrors.add(firstError.errorKey);
+                vscode.window.showErrorMessage(`Error on line ${firstError.lineNumber + 1}: ${firstError.message}`);
+                // For remaining valid errors, list line numbers
+                if (validErrors.length > 0) {
+                    const lineNumbers = validErrors.map(err => err.lineNumber + 1);
+                    vscode.window.showInformationMessage(`Additional errors on lines: ${lineNumbers.join(', ')}`);
+                }
+            }
+            else {
+                // No valid errors, provide a tip
+                await provideTip(document.getText());
+            }
+            // Clean up recentEdits
+            for (const [line, editTime] of recentEdits) {
+                if (editTime < fiveSecondsAgo) {
+                    recentEdits.delete(line);
+                }
+            }
         }
     }, 30000); // 30 seconds
     context.subscriptions.push({ dispose: () => clearInterval(interval) });
@@ -109,17 +175,17 @@ async function getExplanationFromAPI(codeSnippet) {
         return null;
     }
 }
-// Function to analyze the full code every 30 seconds
-async function analyzeCode(codeSnippet) {
+// Function to provide a helpful tip
+async function provideTip(codeSnippet) {
     const apiKey = process.env.GPT4_API_KEY;
-    const apiEndpoint = "https://api.openai.com/v1/chat/completions"; // Ensure you're using the correct endpoint
+    const apiEndpoint = "https://api.openai.com/v1/chat/completions";
     if (!apiKey) {
         vscode.window.showErrorMessage("GPT-4 API key is not set. Please add it to your .env file.");
         return;
     }
     const fetch = await getFetch();
     if (!fetch)
-        return; // Check if fetch was successfully loaded
+        return;
     try {
         const response = await fetch(apiEndpoint, {
             method: "POST",
@@ -128,22 +194,27 @@ async function analyzeCode(codeSnippet) {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4", // Specify the model
-                messages: [{ role: "user", content: `Analyze the following code and provide tips:\n\n${codeSnippet}` }],
+                model: "gpt-4o-mini-2024-07-18", // Specify the model
+                messages: [{ role: "user", content: `Provide a helpful tip for the following code, focusing on areas like reducing time complexity, improving code organization, or identifying redundant expressions:\n\n${codeSnippet}` }],
                 max_tokens: 150 // Adjust as necessary
             })
         });
-        // Updated response parsing
-        const result = await response.json(); // No type assertion needed here
+        const result = await response.json();
         if (result.choices && result.choices.length > 0) {
-            const tips = result.choices[0].message.content; // Get the content of the first choice
-            if (tips) {
-                vscode.window.showInformationMessage(`CodePulse Tip: ${tips}`);
+            const tip = result.choices[0].message.content;
+            if (tip && tip.trim()) {
+                vscode.window.showInformationMessage(`CodePulse Tip: ${tip}`);
             }
+            else {
+                vscode.window.showInformationMessage("Code looks great so far.");
+            }
+        }
+        else {
+            vscode.window.showInformationMessage("Code looks great so far.");
         }
     }
     catch (error) {
-        vscode.window.showErrorMessage(`Error analyzing code: ${error instanceof Error ? error.message : String(error)}`);
+        vscode.window.showErrorMessage(`Error fetching tip: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 // Deactivation method
