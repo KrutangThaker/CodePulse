@@ -1,5 +1,5 @@
 {
-  "name": "alex-krutang-codepulse",
+  "name": "AK-CodePulse",
   "displayName": "CodePulse",
   "description": "An extension to explain code and analyze implementation using GPT-4 Mini API",
   "version": "0.0.1",
@@ -10,24 +10,24 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:alex-krutang-codepulse.explainCode"
+    "onCommand:AK-CodePulse.explainCode"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "alex-krutang-codepulse.helloWorld",
+        "command": "AK-CodePulse.helloWorld",
         "title": "Hello World"
       },
       {
-        "command": "alex-krutang-codepulse.explainCode",
+        "command": "AK-CodePulse.explainCode",
         "title": "Explain Code"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "alex-krutang-codepulse.explainCode",
+          "command": "AK-CodePulse.explainCode",
           "when": "editorHasSelection"
         }
       ]
