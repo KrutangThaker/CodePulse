@@ -1,3 +1,0 @@
-#CodePulse
-
-Code Pulse.
