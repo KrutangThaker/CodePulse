@@ -11,7 +11,6 @@ interface GPTApiResponse {
     }[];
 }
 
-
 async function getFetch() {
     const { default: fetch } = await import('node-fetch');
     return fetch;
@@ -41,7 +40,25 @@ export function activate(context: vscode.ExtensionContext) {
                         vscode.ViewColumn.Beside,
                         {}
                     );
-                    panel.webview.html = `<html><body><pre>${explanation}</pre></body></html>`;
+                    panel.webview.html = `
+                        <html>
+                            <head>
+                                <style>
+                                    pre {
+                                        white-space: pre-wrap;       /* Wraps the text */
+                                        word-wrap: break-word;       /* Breaks long words */
+                                    }
+                                    body {
+                                        padding: 10px;              /* Adds padding for better readability */
+                                        font-family: sans-serif;    /* Optional: Sets a default font */
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <pre>${explanation}</pre>
+                            </body>
+                        </html>
+                    `;
                 } else {
                     vscode.window.showErrorMessage("Could not generate an explanation.");
                 }
@@ -110,7 +127,6 @@ async function getExplanationFromAPI(codeSnippet: string): Promise<string | null
         return null;
     }
 }
-
 
 // Function to analyze the full code every 30 seconds
 async function analyzeCode(codeSnippet: string) {
